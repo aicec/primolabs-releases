@@ -156,6 +156,9 @@
       .flow-arrow { transform: rotate(90deg); }
       footer .container { flex-direction: column; text-align: center; }
     }
+    /* OS 감지 추천 다운로드 강조 */
+    .btn.recommended { outline: 3px solid #fbbf24; outline-offset: 2px; position: relative; }
+    .btn.recommended::after { content: "\CD94\CC9C"; position: absolute; top: -10px; right: -8px; background: #fbbf24; color: #1f2937; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 8px; }
   </style>
 </head>
 <body>
@@ -189,15 +192,15 @@
         초등학생부터 산업 현장까지, 6단계 학습 경로로 피지컬 AI를 경험합니다.
       </p>
       <div class="hero-buttons">
-        <a href="https://github.com/aicec/primolabs-releases/releases/download/v2.6.5/PrimoStudio-2.6.5-arm64.dmg" class="btn btn-primary">
+        <a href="https://github.com/aicec/primolabs-releases/releases/download/v2.6.5/PrimoStudio-2.6.5-arm64.dmg" class="btn btn-primary" id="dl-mac-arm">
           <svg viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
           macOS (Apple Silicon)
         </a>
-        <a href="https://github.com/aicec/primolabs-releases/releases/download/v2.6.5/PrimoStudio-2.6.5-x64.dmg" class="btn btn-primary" style="background:linear-gradient(135deg, var(--indigo), var(--violet));">
+        <a href="https://github.com/aicec/primolabs-releases/releases/download/v2.6.5/PrimoStudio-2.6.5-x64.dmg" class="btn btn-primary" id="dl-mac-x64" style="background:linear-gradient(135deg, var(--indigo), var(--violet));">
           <svg viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
           macOS (Intel)
         </a>
-        <a href="https://github.com/aicec/primolabs-releases/releases/download/v2.6.5/PrimoStudio-2.6.5-setup.exe" class="btn btn-primary" style="background:linear-gradient(135deg, #0EA5E9, #0369A1);">
+        <a href="https://github.com/aicec/primolabs-releases/releases/download/v2.6.5/PrimoStudio-2.6.5-setup.exe" class="btn btn-primary" id="dl-win" style="background:linear-gradient(135deg, #0EA5E9, #0369A1);">
           <svg viewBox="0 0 24 24"><path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801" fill="currentColor"/></svg>
           Windows (64-bit)
         </a>
@@ -462,5 +465,37 @@
     </div>
   </footer>
 
+  <script>
+  /* 다운로드: 최신 릴리즈의 실제 자산으로 직접 연결 + OS 감지 추천.
+     버전 하드코딩 대신 GitHub API로 현재 자산을 가져와 누락/버전 무관하게 항상 동작. */
+  (function () {
+    var REPO = 'aicec/primolabs-releases';
+    var RELEASES = 'https://github.com/' + REPO + '/releases/latest';
+    var MAP = [
+      { id: 'dl-mac-arm', re: /arm64\.dmg$/i },
+      { id: 'dl-mac-x64', re: /x64\.dmg$/i },
+      { id: 'dl-win',     re: /setup\.exe$/i }
+    ];
+    fetch('https://api.github.com/repos/' + REPO + '/releases/latest', { headers: { 'Accept': 'application/vnd.github+json' } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (rel) {
+        if (!rel || !rel.assets) return;
+        MAP.forEach(function (m) {
+          var el = document.getElementById(m.id);
+          if (!el) return;
+          var hit = rel.assets.filter(function (x) { return m.re.test(x.name); })[0];
+          el.href = hit ? hit.browser_download_url : RELEASES;
+        });
+      })
+      .catch(function () {});
+    try {
+      var ua = navigator.userAgent || '', plat = navigator.platform || '', pick = null;
+      if (/Win/i.test(plat) || /Windows/i.test(ua)) pick = 'dl-win';
+      else if (/Mac/i.test(plat) || /Mac/i.test(ua)) pick = 'dl-mac-arm';
+      var el = pick && document.getElementById(pick);
+      if (el) el.classList.add('recommended');
+    } catch (e) {}
+  })();
+  </script>
 </body>
 </html>
